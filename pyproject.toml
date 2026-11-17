@@ -1,0 +1,124 @@
+[project]
+name = "webscraper-service"
+version = "1.0.0"
+description = "Web scraping microservice with Playwright and Scrapy"
+authors = [{name = "KAG Team"}]
+requires-python = ">=3.14"
+dependencies = [
+    # Core web framework
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.38.0",
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.14.2",  # GHSA-4xgf-cpjx-pc3j fixed in 2.14.2
+    # CVE-2026-69247 was INTRODUCED in cryptography 44.0.0 and fixed in 50.0.0.
+    # PR #56 moved uv.lock to 50.0.0 but left this floor at 46.0.5, which still
+    # permits the whole vulnerable 46.0.5-49.x range: the lock was only
+    # ACCIDENTALLY safe, and any later re-resolution could walk straight back
+    # into it. That would not be caught, because the archetype runs a bare
+    # `uv sync` (no --frozen/--locked/`uv lock --check`) and caches on
+    # pyproject.toml rather than uv.lock, so a re-resolved lockfile never fails
+    # CI. Declared explicitly here so the floor, not the lock, is the guarantee.
+    "cryptography>=50.0.0",
+    "httpx>=0.28.0",
+    "certifi>=2026.10.19",  # PYSEC-2026-4320 fixed in 2026.10.19
+    "starlette>=1.3.1",  # CVE-2025-62727, CVE-2026-48710/48817/48818/54282/54283
+    # HTML/Web parsing
+    "beautifulsoup4>=4.13.0",
+    # Used directly to compile caller-supplied CSS selectors at request time; it
+    # is bs4's own selector engine, pinned explicitly rather than relied on transitively.
+    "soupsieve>=4.0.0",  # CVE-2026-49476/49477/85999/86000
+    "lxml>=6.1.0",  # CVE-2026-41066
+    "trafilatura>=2.0.0",
+    "markdownify>=0.14.1",  # backstop HTML→Markdown when trafilatura returns thin; CVE-2025-46656
+    "extruct>=0.17.0",  # JSON-LD/microdata/OpenGraph/RDFa structured-data extraction
+    # Web scraping
+    # CVE-2026-84366: S3DownloadHandler signed S3 requests over plaintext HTTP
+    # by default, fixed in 2.17.0. This repo makes no s3:// requests today, but
+    # the floor is bumped anyway so a future re-resolution cannot walk back
+    # into the vulnerable range — same reasoning as the protego/cryptography
+    # floors below/above.
+    "scrapy>=2.17.0",
+    # CVE-2026-55520, fixed in protego 0.6.2. protego is transitive via scrapy,
+    # which floors it at >=0.1.15 — the whole vulnerable range is still
+    # resolvable, so bumping only uv.lock would leave the fix ACCIDENTAL. The
+    # archetype runs a bare `uv sync` (no --frozen/--locked/`uv lock --check`)
+    # and caches on pyproject.toml rather than uv.lock, so a re-resolved
+    # lockfile never fails CI and would walk straight back into it. Declared
+    # here so the FLOOR, not the lock, is the guarantee — same reasoning as the
+    # cryptography>=50.0.0 pin above (#58).
+    "protego>=0.6.2",
+    "playwright>=1.55.0",
+    "curl-cffi>=0.15.0",  # Chrome TLS/JA3 impersonation (anti-bot reach); CVE-2026-33752
+    "playwright-stealth>=2.0.3",  # browser-level stealth patches on the Playwright context
+    # Image processing
+    "Pillow>=13.0.0",  # CVE-2026-112395..112899 (8 advisories) fixed in 13.0.0
+    # Utilities
+    "python-dotenv>=1.2.2",  # CVE-2026-28684
+    # Security updates
+    "urllib3>=2.8.0",  # CVE-2026-44431, CVE-2026-44432 fixed in 2.7.0
+    "werkzeug>=3.1.9",
+    "cachetools>=6.2.4",
+    "prometheus-client>=0.21.0",
+]
+
+[project.optional-dependencies]
+contract = [
+    "schemathesis>=3.36.0",
+]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=6.0.0",
+    "pytest-timeout>=2.3.1",
+    "pytest-mock>=3.12.0",
+    "httpx>=0.28.0",
+    "ruff>=0.15",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+asyncio_mode = "auto"
+addopts = "--strict-markers --tb=short -m 'not integration'"
+timeout = 120
+markers = [
+    "integration: needs a live deployment (LICENSE_TOKEN) or a real Chromium; deselected by default",
+    "e2e: in-process full stack against a local HTTP server, no external network; runs by default",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=6.0.0",
+    "pytest-timeout>=2.3.1",
+    "pytest-mock>=3.12.0",
+    "ty>=0.0.23",
+    "ruff>=0.15",
+    "detect-secrets>=1.5.0",
+    "respx>=0.22.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = ["E501"]
+
+[tool.ty.environment]
+python-version = "3.14"
+
+[tool.ty.rules]
+unresolved-import = "ignore"
+
+[tool.coverage.report]
+fail_under = 85

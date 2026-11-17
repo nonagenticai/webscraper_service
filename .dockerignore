@@ -1,0 +1,36 @@
+# Keep the build context small: only manifests + src are COPY'd into the image.
+# Without this file the whole repo (incl. the ~391MB local .venv) ships to the
+# buildkit daemon as context on every build.
+
+# Virtualenvs / caches
+.venv/
+__pycache__/
+*.pyc
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+.uv_cache/
+.hypothesis/
+
+# VCS / worktrees
+.git/
+.gitignore
+.worktrees/
+
+# Tests + local state (not needed in the image)
+tests/
+*.sqlite
+.coverage
+htmlcov/
+test-results/
+quality_output/
+
+# Editor / OS cruft
+.vscode/
+.idea/
+.DS_Store
+
+# CI / docs not needed at build time
+.github/
+*.md
+!README.md

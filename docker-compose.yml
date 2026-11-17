@@ -1,0 +1,129 @@
+# ==============================================================================
+# WebScraper Service - Docker Compose Configuration
+# ==============================================================================
+
+services:
+  # ----------------------------------------------------------------------------
+  # WebScraper Service API
+  # ----------------------------------------------------------------------------
+  webscraper:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: webscraper-service
+
+    # --------------------------------------------------------------------------
+    # Port Exposure
+    # --------------------------------------------------------------------------
+    ports:
+      - "0.0.0.0:9119:9119"
+    expose:
+      - "9119"
+
+    command:
+      - uvicorn
+      - main:app
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "9119"
+      - --workers
+      - "1"
+
+    # --------------------------------------------------------------------------
+    # Environment Configuration
+    # --------------------------------------------------------------------------
+    environment:
+      # Core Metadata
+      SERVICE_NAME: webscraper-service
+      VERSION: 1.0.0
+      ENVIRONMENT: production
+      LOG_LEVEL: INFO
+
+      # Application Settings
+      PORT: 9119
+      CORS_ALLOW_ORIGINS: http://localhost:8921,http://localhost:3000,http://127.0.0.1:3000
+
+      # Python Environment
+      PYTHONDONTWRITEBYTECODE: 1
+      PYTHONUNBUFFERED: 1
+
+      # Playwright Settings
+      PLAYWRIGHT_HEADLESS: "true"
+      PLAYWRIGHT_TIMEOUT: 30.0
+      PLAYWRIGHT_BROWSERS_PATH: /app/ms-playwright
+
+      # Scraping Settings
+      SCRAPING_DEFAULT_DELAY: 1.0
+      SCRAPING_USER_AGENT: WebScraper-Service/1.0 (+https://example.com/bot)
+      SCRAPING_MAX_CONCURRENT: 16
+
+      # Screenshot Settings
+      SCREENSHOT_DIR: /tmp/webscraper_screenshots
+
+      # Trusted Network Auth
+      DEFAULT_TENANT_ID: n8n-dev
+
+      # Auth (Istio header-based)
+      AUTH_ENABLED: true
+      JWT_ALGORITHM: RS256
+      # Supply one of: JWT_PUBLIC_KEY or JWT_PUBLIC_KEY_PATH
+
+    # --------------------------------------------------------------------------
+    # Volume Mounts
+    # --------------------------------------------------------------------------
+    volumes:
+      - ./logs:/app/logs
+      - webscraper_screenshots:/tmp/webscraper_screenshots
+
+    # --------------------------------------------------------------------------
+    # Restart Policy
+    # --------------------------------------------------------------------------
+    restart: unless-stopped
+
+    # --------------------------------------------------------------------------
+    # Health Check
+    # --------------------------------------------------------------------------
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9119/health"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 40s
+
+    # --------------------------------------------------------------------------
+    # Resource Limits
+    # --------------------------------------------------------------------------
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+
+    # --------------------------------------------------------------------------
+    # DNS and Host Resolution (for cluster deployment)
+    # --------------------------------------------------------------------------
+    # extra_hosts:
+    #   - "webscraper.example.com:<private-host-ip>"
+
+    # --------------------------------------------------------------------------
+    # Network Configuration
+    # --------------------------------------------------------------------------
+    networks:
+      - webscraper-network
+
+# ==============================================================================
+# Networks
+# ==============================================================================
+networks:
+  webscraper-network:
+    driver: bridge
+
+# ==============================================================================
+# Volumes
+# ==============================================================================
+volumes:
+  webscraper_screenshots:
+    driver: local

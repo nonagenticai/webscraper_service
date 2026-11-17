@@ -1,0 +1,16 @@
+.DS_Store
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.local-ci-commit.txt
+.local-ci-push.txt
+coverage_html/
+
+# Generated files
+.coverage
+01_recent_push_failure.txt
+02_deploy_issues.txt
+
+# Local worktrees (git worktree add) — never tracked
+.worktrees/
