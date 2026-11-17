@@ -35,8 +35,14 @@ class TestBlockedHostnames:
     @pytest.mark.parametrize(
         "url",
         [
-            "http://registry.example.com/v2/",
-            "https://postgres.example.com:5432",
+            # Fiction under the reserved-style `.internal` TLD — no host here
+            # names one. The scrub that published this repo as reference
+            # material rewrote the two original hosts to `*.example.com`,
+            # which left this test asserting that `.example.com` is blocked —
+            # the guard only blocks `.internal`, so it failed on its published
+            # main. The rule under test is the SUFFIX.
+            "http://scraper-test.internal/v2/",
+            "https://db-test.internal:5432",
             "http://anything.INTERNAL/",
         ],
     )
@@ -131,7 +137,7 @@ class TestOutboundGuardHook:
     async def test_hook_blocks_internal_suffix(self):
         hook = make_outbound_guard_hook()
         with pytest.raises(UrlNotAllowedError, match="internal host"):
-            await hook(_FakeRequest("http://registry.example.com/v2/"))
+            await hook(_FakeRequest("http://scraper-test.internal/v2/"))
 
     @pytest.mark.asyncio
     async def test_hook_allows_public_literal(self):
