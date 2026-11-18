@@ -1,0 +1,13 @@
+# Reviewed allowlist — guards whose subject IS private-address space.
+# Each rule names a file and the exact pattern it must be allowed to contain.
+# No estate host, IP or credential is allowlisted; every literal below is a
+# generic placeholder (`100.64.0.x`, `*.internal` fixture names).
+
+src/config.py:\.internal                          # docstring examples of proxy targets, not estate hosts
+src/services/curl_cffi_scraper.py:\.internal      # docstring describes the block rule
+src/services/scraper_manager.py:\.internal        # comment describing the SSRF guard
+src/services/url_guard.py:\.internal              # the blocklist suffix constant and its docstrings
+src/services/url_guard.py:100\.64\.               # docstring documents the RFC 6598 range
+tests/test_curl_cffi_scraper.py:\.internal        # fixture host `foo.internal`, not an estate host
+tests/test_url_guard.py:\.internal                # fixtures use reserved-style `.internal` names
+tests/test_url_guard.py:100\.64\.                 # RFC 6598 SSRF subjects

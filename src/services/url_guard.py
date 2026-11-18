@@ -44,13 +44,12 @@ def _ip_is_blocked(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
     """True if an IP belongs to a range a public scraper must never reach.
 
     ``is_global`` is the load-bearing check, not the flag list. The named flags
-    below miss RFC 6598 shared address space (100.64.0.0/10) — which on this
-    fleet is the TAILSCALE TAILNET: the k3s control plane (100.64.0.10), the
-    docker registry (100.64.0.11), the GPU hosts. Python reports those as
+    below miss RFC 6598 shared address space (100.64.0.0/10) — the CGNAT range
+    mesh and overlay networks use for their own hosts. Python reports those as
     ``is_private=False, is_reserved=False``, so a caller could point a scrape at
-    the kube API or the registry and the guard would wave it through. Every one
-    of them is ``is_global=False``, as is every other range a scraper has no
-    business reaching, so that is the rule and the flags are the explanation.
+    an overlay-only host and the guard would wave it through. Every one of them
+    is ``is_global=False``, as is every other range a scraper has no business
+    reaching, so that is the rule and the flags are the explanation.
     """
     # An IPv4-mapped IPv6 literal (::ffff:100.64.0.1) must be judged on the
     # address it actually reaches, not on the wrapper.

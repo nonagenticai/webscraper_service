@@ -157,17 +157,17 @@ class TestTailnetAndSuffixBypasses:
         "addr",
         [
             "100.64.0.1",  # RFC 6598 shared address space, lower bound
-            "100.64.0.10",  # k3s control plane on this fleet
-            "100.64.0.11",  # docker registry
+            "100.64.0.10",  # an overlay-only deployment host
+            "100.64.0.11",  # an overlay-only registry host
             "100.127.255.254",  # upper reach of 100.64.0.0/10
         ],
     )
     def test_cgnat_tailnet_range_is_blocked(self, addr):
-        """The tailnet is where every piece of this fleet's infrastructure lives.
+        """Overlay-only infrastructure commonly lives in CGNAT space.
 
         Python reports 100.64.0.0/10 as is_private=False and is_reserved=False,
         so a flag-list guard waved it straight through — a caller could aim a
-        scrape at the kube API or the registry.
+        scrape at an overlay-only deployment host or registry.
         """
         with pytest.raises(UrlNotAllowedError):
             assert_allowed_url(f"http://{addr}/")
